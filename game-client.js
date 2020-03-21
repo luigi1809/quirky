@@ -49,7 +49,7 @@ NAMERE = /^.{1,12}$/;
 CHATRE = /^.{1,500}$/;
 
 // How long to let each turn last for, in seconds
-var COUNTDOWNTIME = 60;  // 1 min
+var COUNTDOWNTIME = 180;  // 3 min
 
 // Max players per room
 var PLAYERLMT = 6;
