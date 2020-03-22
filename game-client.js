@@ -122,7 +122,7 @@ function countdownTimer() {
             $(COUNTDOWN).html(min + "m " + sec + "s");
             COUNTDOWNTID = setTimeout(countdown, 1000);
         } else {
-            $.post("/games/" + enc($.cookie("game")) + "/players",
+            $.post("games/" + enc($.cookie("game")) + "/players",
                    {end_turn: true}, function() {
                 getPlayers();
             });
@@ -152,7 +152,7 @@ function onGetPlayers(pdata) {
     if (my_player) {
         if (pdata[my_player] === undefined) {
             // I've got a player name, but we need to add it to the game
-            $.post("/games/" + enc(my_game) + "/players", {name: my_player},
+            $.post("games/" + enc(my_game) + "/players", {name: my_player},
                    function() {getPlayers();});
         } else if (HAVETURN !== pdata[my_player].has_turn) {
             HAVETURN = pdata[my_player].has_turn;
@@ -170,7 +170,7 @@ function onGetPlayers(pdata) {
  * Process player data.
  */
 function getPlayers() {
-    $.getJSON("/games/" + enc($.cookie("game")) +
+    $.getJSON("games/" + enc($.cookie("game")) +
               "/players", onGetPlayers);
 }
 
@@ -191,7 +191,7 @@ function drawTurnInfo(pdata) {
         $(TURN).html("It's your turn! You have " +
                      "<span id='countdown'>0m 0s</span> left.");
         $(ENDTURN)[0].onclick = function() {
-            $.post("/games/" + enc(my_game) + "/players", {end_turn: true}, function() {
+            $.post("games/" + enc(my_game) + "/players", {end_turn: true}, function() {
                 getPlayers();
 
                 /* Typically we let HAVETURN get updated from the server
@@ -252,7 +252,7 @@ function getMyPieces(player) {
  * Publish the number of pieces left in the bag.
  */
 function getPiecesLeft() {
-    $.getJSON("/games/" + enc($.cookie("game")) +
+    $.getJSON("games/" + enc($.cookie("game")) +
               "/pieces", function(data) {
         $(GAMEPIECES).empty();
         var npieces = 0;
@@ -272,7 +272,7 @@ function onPieceDrop(event, ui) {
     var piece = $(ui.draggable).data().piece;
     $.ajax({
         type: 'POST',
-        url: "/games/" + enc($.cookie("game")) + "/board",
+        url: "games/" + enc($.cookie("game")) + "/board",
         data: {
             shape: piece.shape,
             color: piece.color,
@@ -287,7 +287,7 @@ function onPieceDrop(event, ui) {
             $(ERRORS).append("<div class='error'>&#9888; "+jqXHR.responseText+"</div>");
         },
         complete: function() {
-            $.getJSON("/games/" + enc($.cookie("game")) +
+            $.getJSON("games/" + enc($.cookie("game")) +
                       "/players", drawTurnInfo);
         }
     });
@@ -300,7 +300,7 @@ function getBoard() {
     var game = $.cookie("game");
     var board_margin = 5;
 
-    $.getJSON("/games/" + enc(game) + "/dimensions", function (data) {
+    $.getJSON("games/" + enc(game) + "/dimensions", function (data) {
         var dimensions = data;
         // add 5 for each side since players can add up to 5 pieces per turn
         var top = dimensions.top - board_margin;
@@ -334,7 +334,7 @@ function getBoard() {
         //$(BOARD).css("width", (($(GRIDCLS).width()) * 10))
         //$(BOARD).css("height", (($(GRIDCLS).height()) * 10))
 
-        $.getJSON("/games/" + enc(game) + "/board", function (data) {
+        $.getJSON("games/" + enc(game) + "/board", function (data) {
             var i, idx;
             // place pieces on board
             if (data.length > 0) {
@@ -410,9 +410,9 @@ function drawChatIn() {
         var game = $.cookie("game");
         var resource;
         if (game) {
-            resource = "/games/" + enc(game) + "/chat";
+            resource = "games/" + enc(game) + "/chat";
         } else {
-            resource = "/chat";
+            resource = "chat";
         }
         $.post(resource, {
             input: chatin,
@@ -469,7 +469,7 @@ var drawChatLog = function() {
     return function () {
         var my_player = $.cookie("player");
         var my_game = $.cookie("game");
-        var uri = my_game ? '/games/' + enc(my_game) + '/chat' : '/chat';
+        var uri = my_game ? 'games/' + enc(my_game) + '/chat' : 'chat';
         $.getJSON(uri, {lastid: lastids[uri]}, function(data) {
             if ($.isEmptyObject(data)) {
                 // Server returns empty obj if there's nothing new
@@ -537,7 +537,7 @@ function drawGameList(games) {
             }
             return false;
         }
-        $.post('/games', {name: gamenm},
+        $.post('games', {name: gamenm},
 
                /**
                 * @param data: {obj} contains potential random game name,
@@ -551,7 +551,7 @@ function drawGameList(games) {
 
                    var tries = 0;
                    function loadgame() {
-                       $.getJSON("/games", function(games) {
+                       $.getJSON("games", function(games) {
                            for (var i in games) {
                                if (!games.hasOwnProperty(i)) {
                                    continue;
@@ -592,7 +592,7 @@ function drawLobby(games) {
 
     // setup future calls to get game list
     function pollGames() {
-        $.getJSON("/games", drawGameList);
+        $.getJSON("games", drawGameList);
         GETGAMESTID = setTimeout(pollGames, 2000);
     }
     GETGAMESTID = setTimeout(pollGames, 2000);
@@ -612,7 +612,7 @@ function drawGame() {
         clearTimeout(GETPLAYERSTID);
         $.ajax({
             type: 'DELETE',
-            url: "/games/" + enc($.cookie("game")) + "/players",
+            url: "games/" + enc($.cookie("game")) + "/players",
             data: {name: $.cookie("player")},
             success: function() {
                 $.removeCookie('game');
@@ -673,7 +673,7 @@ function gameOrLobby(games) {
  * - Otherwise, put him in the lobby.
  */
 function main() {
-    $.getJSON("/games", gameOrLobby);
+    $.getJSON("games", gameOrLobby);
 }
 
 $(function() {
