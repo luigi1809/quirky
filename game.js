@@ -166,6 +166,25 @@ function respOk (response, data, type) {
     response.end();
 }
 
+    function exists(game, x, y){
+        if (game.boardmat[y][x] !== undefined){
+            ////console.log("exists ? piece ".concat(x," ", y, " true1"));
+            return true;
+        }
+        //else {
+        //    for (var j = 0; j < game.turn_pieces.length; j++) {
+        //        piece = game.turn_pieces[j];
+        //        if ((x == piece.column) && (y == piece.row)){
+        //            ////console.log("exists ? piece ".concat(x," ", y, " true2"));
+        //            return true;
+        //        }
+        //    }
+        //}
+        ////console.log("exists ? piece ".concat(x," ", y, " false"));
+        return false;
+        //return game.boardmat[x][y] !== undefined;
+    }
+
 /**
  * Add a game piece to the board, check that:
  *  1. game piece doesn't already exist
@@ -176,79 +195,243 @@ function addGamePiece(game, gamepiece) {
 
     var row = gamepiece.row;
     var col = gamepiece.column;
-
+    
     if (game.boardmat[row][col] !== undefined) {
         return "GamePiece already exists.";
     }
+    
+    //console.log("candidate x=".concat(col," y=", row, " color=", gamepiece.piece.color, " shape=", gamepiece.piece.shape));
 
-    /**
-     * Helper function, to check whether it is valid to place a piece
-     * param piece: the piece object being placed
-     * param getAdjacent: a function that returns an adjacent GamePiece
-     * return: false if valid placement, otherwise return the offending GamePiece
-     */
-    function _adjacentPieces(piece, getAdjacent) {
-        for (var i=1; i<=6; i++) {
-            adjacent = getAdjacent(i);
-            if (typeof adjacent === 'undefined') {
-                return false;
-            } else if (i === 6) { // can't have more than 6 pieces in a valid line
-                return adjacent;
-            }
-
-            var samecolor = (adjacent.piece.color === piece.color);
-            var sameshape = (adjacent.piece.shape === piece.shape);
-
-             ////console.log('piece: ' + piece.color + ' ' + piece.shape +
-             //            ', adjacent: ' + adjacent.piece.color + ' ' +
-             //            adjacent.piece.shape);
-
-            // either samecolor or sameshape, not both
-            if ((samecolor || sameshape) && !(samecolor && sameshape)) {
-                // add a point for adjacent piece, if not been played this turn
+    for (var_x = col , var_y = row; exists(game, var_x, var_y) || (var_x == col && var_y == row); var_x--){}
+    var_x++;
+    min_piece_v = game.boardmat[var_x][var_y];
+    //console.log("min V x=".concat(var_x," y=",var_y));
+    
+    for (var_x = col, var_y = row; exists(game, var_x, var_y) || (var_x == col && var_y == row); var_y--){}
+    var_y++;
+    min_piece_h = game.boardmat[var_x][var_y];
+    //console.log("min H x=".concat(var_x," y=",var_y));
+    
+    function _checkLine(idx_gamepiece, color_array, shape_array){
+        //console.log("checkLine");
+        //console.log(color_array);
+        //console.log(shape_array);
+        //console.log("idx_gamepiece = ".concat(idx_gamepiece));
+        if (color_array.length > 6){
+            //console.log("DEB too long");
+            return false;
+        }
+        
+        if (color_array.length == 1){
+            return true;
+        }
+        
+        var first_color = null;
+        var second_color = null;
+        var first_shape = null;
+        var second_shape = null;
+        for (var i = 0; i < color_array.length && i < idx_gamepiece; i++){
+            if (i == 0){
+                first_color = color_array[i];
+                first_shape = shape_array[i];
+                //console.log("first! ".concat(i, " ", first_color, " ", first_shape));
                 continue;
             }
-            return adjacent;
+            if (first_color != color_array[i]){
+                first_color = null;
+            }
+            if (first_shape != shape_array[i]){
+                first_shape = null;
+            }
+            //console.log("first ".concat(i, " ", first_color, " ", first_shape));
         }
-        return false;
+        //console.log("first ".concat(first_color, " ", first_shape));
+        for (var i = idx_gamepiece; i < color_array.length; i++){
+            if (i == idx_gamepiece){
+                second_color = color_array[i];
+                second_shape = shape_array[i];
+                //console.log("second! ".concat(i, " ", second_color, " ", second_shape));
+                continue;
+            }
+            if (second_color != color_array[i]){
+                second_color = null;
+            }
+            if (second_shape != shape_array[i]){
+                second_shape = null;
+            }
+            //console.log("second ".concat(i, " ", second_color, " ", second_shape));
+        }
+        //console.log("second ".concat(second_color, " ", second_shape));
+
+        for (var i = 0; i < color_array.length; i++){
+            for (var j = 0; j < color_array.length; j++){
+                if (i == j){
+                    continue;
+                }
+                if (color_array[i] == color_array[j]  && shape_array[i] == shape_array[j]){
+                    // piece already used
+                    //console.log("piece already used");
+                    return false;
+                }
+            }
+        }
+        
+        if (first_color == null && second_color == null && first_shape == null && second_shape == null){
+            //console.log("DEB all null");
+            return false;
+        }
+        
+        if (idx_gamepiece == 0){
+            if (second_color == null && second_shape == null){
+                //console.log("DEB all second null");
+                return false;
+            }
+            return true;
+        }
+        
+        if (first_color != second_color && first_shape != second_shape){
+            //console.log("DEB nothing in common");
+            return false;
+        }
+        return true;
     }
 
-    // check if adjacent pieces are compatible
-    var checkLeft = _adjacentPieces(gamepiece.piece, function(offset) {
-        var _row = row-offset;
-        var piece = game.boardmat[_row][col];
-        return piece && new GamePiece(piece, _row, col);
-    });
-    var checkRight = _adjacentPieces(gamepiece.piece, function(offset) {
-        var _row = row+offset;
-        var piece = game.boardmat[_row][col];
-        return piece && new GamePiece(piece, _row, col);
-    });
-    var checkUp = _adjacentPieces(gamepiece.piece, function(offset) {
-        var _col = col-offset;
-        var piece = game.boardmat[row][_col];
-        return piece && new GamePiece(piece, row, _col);
-    });
-    var checkDown = _adjacentPieces(gamepiece.piece, function(offset) {
-        var _col = col+offset;
-        var piece = game.boardmat[row][_col];
-        return piece && new GamePiece(piece, row, _col);
-    });
-    var badPiece = (checkLeft || checkRight || checkUp || checkDown);
+    function _checkH(game, gamepiece){
+        //console.log("_checkH");
+        row = gamepiece.row;
+        col = gamepiece.column;
+        var color_array = [];
+        var shape_array = [];
+        var idx_gamepiece = -1;
 
-    if (badPiece !== false) {
-        return ("GamePiece adjacent to incompatible piece: " +
-                badPiece.piece.color + " " + badPiece.piece.shape);
+        //////console.log("countH ? piece ".concat(col," ", row));
+        for (var_x = col , var_y = row; exists(game, var_x, var_y) || (var_x == col && var_y == row); var_x--){}
+        ////console.log("countH ? var_x ".concat(var_x));
+        for (var_x++; exists(game, var_x, var_y) || (var_x == col && var_y == row); var_x++){
+            tmp_piece = game.boardmat[var_y][var_x];
+            if (tmp_piece == undefined){
+                tmp_piece = gamepiece.piece;
+                idx_gamepiece = color_array.length;
+            }
+            color_array.push(tmp_piece.color);
+            shape_array.push(tmp_piece.shape);
+        }
+        return _checkLine(idx_gamepiece, color_array, shape_array);
     }
-
-    // check if piece played in same row or column as past pieces this turn}
-    function sameRowOrCol(otherpiece) {
-        return (otherpiece.row === row || otherpiece.column === col);
+    
+    function _checkV(game, gamepiece){
+        //console.log("_checkV");
+        row = gamepiece.row;
+        col = gamepiece.column;
+        var color_array = [];
+        var shape_array = [];
+        var idx_gamepiece = -1;
+        
+        //////console.log("countV ? piece ".concat(col," ", row));
+        for (var_x = col, var_y = row; exists(game, var_x, var_y) || (var_x == col && var_y == row); var_y--){}
+        ////console.log("countV ? var_y ".concat(var_y));
+        for (var_y++; exists(game, var_x, var_y) || (var_x == col && var_y == row); var_y++){
+           tmp_piece = game.boardmat[var_y][var_x];
+            if (tmp_piece == undefined){
+                tmp_piece = gamepiece.piece;
+                idx_gamepiece = color_array.length;
+            }
+            color_array.push(tmp_piece.color);
+            shape_array.push(tmp_piece.shape);
+        }
+        return _checkLine(idx_gamepiece, color_array, shape_array);
     }
-    if (game.turn_pieces) {
-        if (!game.turn_pieces.every(sameRowOrCol)) {
+    
+    if (! _checkH(game, gamepiece)){
+        return ("Piece is incompatible with other horizontal pieces");
+    }
+    
+    if (! _checkV(game, gamepiece)){
+        return ("Piece is incompatible with other vertical pieces");
+    }
+    
+     // check if piece played as past pieces this turn are contiguous and in same row or column
+    //console.log("game.turn_pieces.length=".concat(game.turn_pieces.length));
+    var color_a = [];
+    var shape_a = [];
+    var row_a = [];
+    var col_a = [];
+    for (var i = 0; i < game.turn_pieces.length; i++){
+        color_a.push(game.turn_pieces[i].color);
+        shape_a.push(game.turn_pieces[i].shape);
+        row_a.push(game.turn_pieces[i].row);
+        col_a.push(game.turn_pieces[i].column);
+    }
+    //console.log(color_a);
+    //console.log(shape_a);
+    //console.log(row_a);
+    //console.log(col_a);
+    ////console.log("game.turn_pieces.color=".concat(game.turn_pieces.color));
+    if (game.turn_pieces.length > 0){
+        candidate_turn_pieces = game.turn_pieces.slice();
+        candidate_turn_pieces.push(gamepiece);
+        color_a = [];
+        shape_a = [];
+        row_a = [];
+        col_a = [];
+        for (var i = 0; i < candidate_turn_pieces.length; i++){
+            color_a.push(candidate_turn_pieces[i].color);
+            shape_a.push(candidate_turn_pieces[i].shape);
+            row_a.push(candidate_turn_pieces[i].row);
+            col_a.push(candidate_turn_pieces[i].column);
+        }
+        //console.log(color_a);
+        //console.log(shape_a);
+        //console.log(row_a);
+        //console.log(col_a);
+        
+        //console.log("candidate_turn_pieces=".concat(candidate_turn_pieces.length));
+        var min_row, min_col, max_row, max_col;
+        for (var i = 0; i < candidate_turn_pieces.length; i++){
+            if (i == 0){
+                min_row = candidate_turn_pieces[i].row;
+                max_row = candidate_turn_pieces[i].row;
+                min_col = candidate_turn_pieces[i].column;
+                max_col = candidate_turn_pieces[i].column;
+                continue;
+            }
+            if (candidate_turn_pieces[i].row < min_row){
+                min_row = candidate_turn_pieces[i].row;
+            }
+            if (candidate_turn_pieces[i].row > max_row){
+                max_row = candidate_turn_pieces[i].row;
+            }
+            if (candidate_turn_pieces[i].column < min_col){
+                min_col = candidate_turn_pieces[i].column;
+            }
+            if (candidate_turn_pieces[i].column > max_col){
+                max_col = candidate_turn_pieces[i].column;
+            }
+        }
+        
+        //console.log("min_row=".concat(min_row, " max_row=", max_row,  " min_col=", min_col, " max_col=", max_col));
+        
+        if ((min_col != max_col) && (min_row != max_row)){
             return ("GamePiece must be in same row or column as others " +
                     "placed this turn.");
+        }
+        if (min_col == max_col){
+            // same column => vertical
+            for (var var_y = min_row; var_y <= max_row; var_y++){
+                if (!(exists(game, min_col, var_y) || (min_col == col && var_y == row))){
+                    return ("GamePiece must be contiguous to the line " +
+                            "placed this turn.");
+                }
+            }
+        }
+        if (min_row == max_row){
+            // same row => horizontal
+            for (var var_x = min_col; var_x <= max_col; var_x++){
+                if (!(exists(game, var_x, min_row) || (var_x == col && min_row == row))){
+                    return ("GamePiece must be contiguous to the line " +
+                            "placed this turn.");
+                }
+            }
         }
     }
 
@@ -268,16 +451,6 @@ function addGamePiece(game, gamepiece) {
     } else if (row > dim.bottom) {
         dim.bottom = row;
     }
-
-    // debug logging, print out boardmat
-    // for (var i=dim.top; i<=dim.bottom; i++) {
-    //  for (var j=dim.left; j<=dim.right; j++) {
-    //      var piecestr = (typeof game.boardmat[i][j] == "undefined") ? " ":
-    //          game.boardmat[i][j];
-    //      process.stdout.write('['+piecestr+']');
-    //  }
-    //  //console.log('');
-    // }
 
     return 0;
 }
@@ -338,82 +511,66 @@ function switchPlayers(game, player) {
     nextTurn(game, player);
 }
 
-
+/**
+ * Count points
+ */
 function countPoints(game) {
     var row, col, piece, x, y, tmp_pnt, tmp_count_x, tmp_count_y;
     var points = 0;
     
-    function _exists(game, x, y){
-        if (game.boardmat[y][x] !== undefined){
-            //console.log("exists ? piece ".concat(x," ", y, " true1"));
-            return true;
-        } else {
-            for (var j = 0; j < game.turn_pieces.length; j++) {
-                piece = game.turn_pieces[j];
-                if ((x == piece.column) && (y == piece.row)){
-                    //console.log("exists ? piece ".concat(x," ", y, " true2"));
-                    return true;
-                }
-            }
-        }
-        //console.log("exists ? piece ".concat(x," ", y, " false"));
-        return false;
-        //return game.boardmat[x][y] !== undefined;
-    }
-    
-    function _contH(game, piece){
-        //console.log("_contH");
+    function _countH(game, piece){
+        ////console.log("_countH");
         var tmp_point = 0;
         row = piece.row;
         col = piece.column;
 
-        ////console.log("countH ? piece ".concat(col," ", row));
-        for (var_x = col, var_y = row; _exists(game, var_x, var_y) ; var_x--){}
-        //console.log("countH ? var_x ".concat(var_x));
-        for (tmp_point = 0, var_x++; _exists(game, var_x, var_y); var_x++, tmp_point++){}
-        //console.log("countH ? tmp_point ".concat(tmp_point));
+        //////console.log("countH ? piece ".concat(col," ", row));
+        for (var_x = col, var_y = row; exists(game, var_x, var_y) ; var_x--){}
+        ////console.log("countH ? var_x ".concat(var_x));
+        for (tmp_point = 0, var_x++; exists(game, var_x, var_y); var_x++, tmp_point++){}
+        ////console.log("countH ? tmp_point ".concat(tmp_point));
         return tmp_point;
     }
     
-    function _contV(game, var_x, var_y){
-        //console.log("_contV");
+    function _countV(game, piece){
+        ////console.log("_countV");
         var tmp_point = 0;
         row = piece.row;
         col = piece.column;
         
-        ////console.log("countV ? piece ".concat(col," ", row));
-        for (var_x = col, var_y = row; _exists(game, var_x, var_y) ; var_y--){}
-        //console.log("countV ? var_y ".concat(var_y));
-        for (tmp_point = 0, var_y++; _exists(game, var_x, var_y); var_y++, tmp_point++){}
-        //console.log("countV ? tmp_point ".concat(tmp_point));
+        //////console.log("countV ? piece ".concat(col," ", row));
+        for (var_x = col, var_y = row; exists(game, var_x, var_y) ; var_y--){}
+        ////console.log("countV ? var_y ".concat(var_y));
+        for (tmp_point = 0, var_y++; exists(game, var_x, var_y); var_y++, tmp_point++){}
+        ////console.log("countV ? tmp_point ".concat(tmp_point));
         return tmp_point;
     }
     
     for (var j = 0; j < game.turn_pieces.length; j++) {
         piece = game.turn_pieces[j];
-        //console.log("x=".concat(piece.column," y=", piece.row));
+        ////console.log("x=".concat(piece.column," y=", piece.row));
     }
     
-    //console.log("");
+    ////console.log("");
     
     if (game.turn_pieces.length == 0){
         // no piece in this turn
-        //console.log("NO PIECE");
+        ////console.log("NO PIECE");
         return points;
     } else if(game.turn_pieces.length == 1){
         // only one piece in this turn
         piece = game.turn_pieces[0];
         y = piece.row;
         x = piece.column;
-        //console.log("piece x=".concat(x," y=", y));
-        if (!(_exists(game, x - 1, y) | _exists(game, x + 1, y) | _exists(game, x, y -  1) | _exists(game, x, y + 1))){
+        ////console.log("piece x=".concat(x," y=", y));
+        if (!(exists(game, x - 1, y) | exists(game, x + 1, y) | exists(game, x, y -  1) | exists(game, x, y + 1))){
             // first piece
-            //console.log("FIRST ONE PIECE");
+            ////console.log("FIRST ONE PIECE");
             points = 1;
             return points;
         } else {
-            //console.log("ONLY ONE PIECE");
-            tmp_count_x = _contH(game, piece);
+            ////console.log("ONLY ONE PIECE");
+            tmp_count_x = _countH(game, piece);
             if (tmp_count_x > 1){
                 points += tmp_count_x;
             }
@@ -421,7 +578,7 @@ function countPoints(game) {
                 points += 6; // 6 in line + 12
             }
             
-            tmp_count_y = _contV(game, piece);
+            tmp_count_y = _countV(game, piece);
             if (tmp_count_y > 1){
                 points += tmp_count_y;
             }
@@ -435,7 +592,7 @@ function countPoints(game) {
             return points;
         }
     } else{
-        //console.log("SEVERAL PIECES");
+        ////console.log("SEVERAL PIECES");
         var horizontal = true;
         for (var i = 0 ; i < game.turn_pieces.length; i++) {
             piece = game.turn_pieces[i];
@@ -451,13 +608,13 @@ function countPoints(game) {
         x = piece.col;
         y = piece.row;
         if (horizontal) {
-            //console.log("HORIZONTAL");
-            points = _contH(game, piece);
+            ////console.log("HORIZONTAL");
+            points = _countH(game, piece);
             for (var i = 0; i < game.turn_pieces.length; i++) {
                 piece = game.turn_pieces[i];
                 x = piece.col;
                 y = piece.row;
-                tmp_pnt = _contV(game, piece);
+                tmp_pnt = _countV(game, piece);
                 if (tmp_pnt > 1){
                     points += tmp_pnt;
                 }
@@ -466,13 +623,13 @@ function countPoints(game) {
                 }
             }
         } else {
-            //console.log("VERTICAL");
-            points = _contV(game, piece);
+            ////console.log("VERTICAL");
+            points = _countV(game, piece);
             for (var i = 0; i < game.turn_pieces.length; i++) {
                 piece = game.turn_pieces[i];
                 x = piece.col;
                 y = piece.row;
-                tmp_pnt = _contH(game, piece);
+                tmp_pnt = _countH(game, piece);
                 if (tmp_pnt > 1){
                     points += tmp_pnt;
                 }
@@ -610,7 +767,7 @@ function handleGame(request, response, game, path) {
                     var idx = -1, _idx = 0;
                     for (var p in player.pieces) {
                         var _piece = player.pieces[p];
-                        ////console.log('check:'+JSON.stringify(p)+', and:'+
+                        //////console.log('check:'+JSON.stringify(p)+', and:'+
                         //          JSON.stringify(piece));
                         if (piece.equals(_piece)) {
                             idx = _idx;
@@ -754,8 +911,8 @@ var server = http.createServer();
 
 server.on('request', function(request, response) {
 
-    ////console.log('games: '+JSON.stringify(games));
-    ////console.log('got url:'+request.url);
+    //////console.log('games: '+JSON.stringify(games));
+    //////console.log('got url:'+request.url);
 
     var u = url.parse(request.url);
     var path = u.pathname.split('/').map(function(x) {
@@ -764,9 +921,9 @@ server.on('request', function(request, response) {
         return Boolean(x);
     });
 
-    ////console.log('decode: '+JSON.stringify(path));
-    ////console.log('req headers:'+JSON.stringify(request.headers));
-    ////console.log('got path:'+JSON.stringify(path));
+    //////console.log('decode: '+JSON.stringify(path));
+    //////console.log('req headers:'+JSON.stringify(request.headers));
+    //////console.log('got path:'+JSON.stringify(path));
 
     switch(path[0]) {
     case 'games':
