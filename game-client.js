@@ -26,22 +26,36 @@
     "use strict";
 }());
 
+//var pastels = {
+//    "green": "#A0E7A0",
+//    "yellow": "#FFFB8C",
+//    "red": "#CD2626",
+//    "orange": "#FFAF5A",
+//    "purple": "#FF8CB6",
+//    "blue": "#97D0F9"
+//};
+
 var pastels = {
-    "green": "#A0E7A0",
-    "yellow": "#FFFB8C",
-    "red": "#CD2626",
-    "orange": "#FFAF5A",
-    "purple": "#FF8CB6",
-    "blue": "#97D0F9"
+    "green": "#008000",
+    "yellow": "#FFFF00",
+    "red": "#FF0000",
+    "orange": "#FFA500", //#F68534
+    "purple": "#800080",
+    "blue": "#0000FF"
 };
 
+
 var ushapes = {
+    //"circle": "&#11044;",
     "circle": "&#9679;",
-    "star": "&#10022;",
+    //"star": "&#10022;",
+    //"star": "&#9733;",
+    "star": "&#10039;",
     "diamond": "&#9670;",
     "square": "&#9632;",
     "triangle": "&#9650;",
-    "clover": "&#9827;"
+    //"clover": "&#9827;",
+    "clover": "&#10022;"
 };
 
 // REs to limit input
@@ -56,6 +70,11 @@ var PLAYERLMT = 6;
 
 // My Turn state
 var HAVETURN = null;
+var LASTHAVETURN = null;
+var CURRENTPLAYER = null;
+var LASTBOARD= null;
+var ROWOFFSET = null;
+var COLOFFSET = null;
 
 // Define DOM element IDs
 var ADDGAME = '#add_game';
@@ -143,6 +162,13 @@ function onGetPlayers(pdata) {
             continue;
         }
         var turn = pdata[p].has_turn ? "has_turn" : "";
+        if (pdata[p].has_turn){
+            if (esc(p) != CURRENTPLAYER){
+                getBoard();
+            }
+            CURRENTPLAYER = esc(p);
+        }
+
         $(PLAYERS).append("<dt class='" + turn + "'>" + esc(p) + "</dt>" +
                           "<dd>" + pdata[p].points + "</dd>");
     }
@@ -267,8 +293,14 @@ function getPiecesLeft() {
  * piece will be added or we get an error back for invalid placements.
  */
 function onPieceDrop(event, ui) {
-    var col = $(this).data().col;
-    var row = $(this).data().row;
+    var col, piece;
+    if (($(this).data().col == COLOFFSET)&&($(this).data().row == ROWOFFSET)){
+        col = $(this).data().col - COLOFFSET;
+        row = $(this).data().row - ROWOFFSET;
+    }else{
+        col = $(this).data().col;
+        row = $(this).data().row;
+    }
     var piece = $(ui.draggable).data().piece;
     $.ajax({
         type: 'POST',
@@ -314,9 +346,18 @@ function getBoard() {
         var cols = right - left + 1;
         for (var i = 0; i < rows; i++) {
             for (var j = 0; j < cols; j++) {
-                $(BOARD).append('<div class="grid"></div>');
-                $(GRIDCLS+":last-child").data(
-                    "col", (j+left)).data("row", (top+i));
+
+                if (j == 0 && i == 0){
+                    $(BOARD).append('<div class="grid bag snapgrid">&#128176</div>');
+                    $(GRIDCLS+":last-child").data(
+                        "col", (j+left)).data("row", (top+i));
+                    COLOFFSET = j+left;
+                    ROWOFFSET = top+i;
+                }else{
+                    $(BOARD).append('<div class="grid"></div>');
+                    $(GRIDCLS+":last-child").data(
+                        "col", (j+left)).data("row", (top+i));
+                }
             }
         }
 
@@ -335,7 +376,7 @@ function getBoard() {
         //$(BOARD).css("height", (($(GRIDCLS).height()) * 10))
 
         $.getJSON("games/" + enc(game) + "/board", function (data) {
-            var i, idx;
+            var i, j, idx, found;
             // place pieces on board
             if (data.length > 0) {
                 for (i in data) {
@@ -345,7 +386,18 @@ function getBoard() {
                     var drow = row - dimensions.top + board_margin;
                     var dcol = col - dimensions.left + board_margin;
                     idx = drow*cols + dcol + 1;
-                    $(GRIDCLS+":nth-child("+idx+")").addClass("boardpiece");
+                    //$(GRIDCLS+":nth-child("+idx+")").addClass("boardpiece");
+                    found = false;
+                    for (j in LASTBOARD){
+                        if ((LASTBOARD[j].row == row) && (LASTBOARD[j].column == col)){
+                            found = true;
+                        }
+                    }
+                    if (!found && (!HAVETURN || (!LASTHAVETURN && HAVETURN))){
+                        $(GRIDCLS+":nth-child("+idx+")").addClass("boardpiece newpiece");
+                    } else {
+                        $(GRIDCLS+":nth-child("+idx+")").addClass("boardpiece");
+                    }
                     $(GRIDCLS+":nth-child("+idx+")").css("color",
                                                       pastels[piece.color]);
                     $(GRIDCLS+":nth-child("+idx+")").html(ushapes[piece.shape]);
@@ -355,7 +407,9 @@ function getBoard() {
                 idx = parseInt(($(GRIDCLS).length + 1) / 2, 10);
                 $(GRIDCLS+":nth-child("+idx+")").addClass('snapgrid');
             }
-
+            LASTBOARD = data;
+            LASTHAVETURN = HAVETURN;
+            
             // iterate through board and mark spots adjacent to pieces
             if (data.length > 0) {
                 var offsets = [1, -1, cols, -cols];

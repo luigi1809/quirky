@@ -43,6 +43,7 @@ var static_files = {
     'normalize.css': fs.readFileSync('thirdparty/normalize.css'),
     'jquery.min.js': fs.readFileSync('thirdparty/jquery.min.js'),
     'jquery-ui.min.js': fs.readFileSync('thirdparty/jquery-ui.min.js'),
+    'jquery.ui.touch-punch.min.js': fs.readFileSync('thirdparty/jquery.ui.touch-punch.min.js'),
     'jquery.cookie.js': fs.readFileSync('thirdparty/jquery.cookie.js'),
     'light_noise_diagonal.png': fs.readFileSync("media/light_noise_diagonal.png"),
     'wood.png': fs.readFileSync("media/dark_wood.png")
@@ -59,6 +60,7 @@ function Game(name) {
     }
     this.players = {};
     this.turn_pieces = [];  // pieces played this turn
+    this.bag_pieces = [];  // pieces baged this turn
     this.chat = [];  // chat log
 
     // board dimensions
@@ -184,6 +186,19 @@ function respOk (response, data, type) {
         return false;
         //return game.boardmat[x][y] !== undefined;
     }
+
+function addStockPiece(game, gamepiece) {
+    game.bag_pieces.push(gamepiece);
+    for (var i = 0; i < game.pieces.length; i++){
+        if ((game.pieces[i].piece.shape == gamepiece.piece.shape) && (game.pieces[i].piece.color == gamepiece.piece.color)){
+            console.log(game.pieces[i]);
+            game.pieces[i].count += 1;
+            console.log(game.pieces[i]);
+            break;
+        }
+    }
+    return 0;
+}
 
 /**
  * Add a game piece to the board, check that:
@@ -508,6 +523,7 @@ function switchPlayers(game, player) {
     // clear pieces played this turn
     player.points += countPoints(game);
     game.turn_pieces = [];
+    game.bag_pieces = [];
     nextTurn(game, player);
 }
 
@@ -529,6 +545,9 @@ function countPoints(game) {
         ////console.log("countH ? var_x ".concat(var_x));
         for (tmp_point = 0, var_x++; exists(game, var_x, var_y); var_x++, tmp_point++){}
         ////console.log("countH ? tmp_point ".concat(tmp_point));
+        if (tmp_point == 6){
+            tmp_point =+ 6; // bonus + 6 for 6 in line
+        }
         return tmp_point;
     }
     
@@ -543,6 +562,9 @@ function countPoints(game) {
         ////console.log("countV ? var_y ".concat(var_y));
         for (tmp_point = 0, var_y++; exists(game, var_x, var_y); var_y++, tmp_point++){}
         ////console.log("countV ? tmp_point ".concat(tmp_point));
+        if (tmp_point == 6){
+            tmp_point += 6; // bonus + 6 for 6 in line
+        }
         return tmp_point;
     }
     
@@ -574,17 +596,17 @@ function countPoints(game) {
             if (tmp_count_x > 1){
                 points += tmp_count_x;
             }
-            if (tmp_count_x == 6){
-                points += 6; // 6 in line + 12
-            }
+            //if (tmp_count_x == 6){
+            //    points += 6; // 6 in line + 12
+            //}
             
             tmp_count_y = _countV(game, piece);
             if (tmp_count_y > 1){
                 points += tmp_count_y;
             }
-            if (tmp_count_y == 6){
-                points += 6; // 6 in line + 12
-            }
+            //if (tmp_count_y == 6){
+            //    points += 6; // 6 in line + 12
+            //}
             
             if (tmp_count_x == 1 && tmp_count_y == 1){
                 points++;
@@ -618,9 +640,9 @@ function countPoints(game) {
                 if (tmp_pnt > 1){
                     points += tmp_pnt;
                 }
-                if (tmp_pnt == 6){
-                    points += 6; // 6 in line + 12
-                }
+                //if (tmp_pnt == 6){
+                //    points += 6; // 6 in line + 12
+                //}
             }
         } else {
             ////console.log("VERTICAL");
@@ -633,9 +655,9 @@ function countPoints(game) {
                 if (tmp_pnt > 1){
                     points += tmp_pnt;
                 }
-                if (tmp_pnt == 6){
-                    points += 6; // 6 in line + 12
-                }
+                //if (tmp_pnt == 6){
+                //    points += 6; // 6 in line + 12
+                //}
             }
         }
     }
@@ -779,7 +801,20 @@ function handleGame(request, response, game, path) {
                     if (idx > -1) {
                         var gp = new GamePiece(piece, row, column);
                         // console.info('adding piece:'+JSON.stringify(gp));
-                        resp = addGamePiece(game, gp);
+                        if ((row == 0) && column == 0){
+                            if (game.turn_pieces.length == 0){
+                                resp = addStockPiece(game, gp);
+                            } else {
+                                resp = "You have already played";
+                            }
+                        } else {
+                            if (game.bag_pieces.length == 0){
+                                resp = addGamePiece(game, gp);
+                            } else {
+                                resp = "You have already put some pieces to bag";
+                            }
+                        }
+                        
                         if (typeof resp === "string") {
                             // add gamepiece failed
                             response.writeHead(409, {'Content-Type': 'text/json'});
