@@ -4,10 +4,6 @@ Quirky
 Quirky is a [Qwirkle](http://www.google.com/search?q=qwirkle+board+game) board
 game clone built with node.js and jQuery.
 
-[Check out the demo](http://quirky.juanl.org)
-
-[Presentation about Quirky](http://www.juanl.org/talks/quirky) from a [Nova Node](http://www.meetup.com/Nova-Node/) meetup
-
 ## Screenshots
 
 ![quirky](https://raw.github.com/jlas/quirky/master/media/scrnshot1.png)
