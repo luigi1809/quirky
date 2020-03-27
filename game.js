@@ -546,7 +546,7 @@ function countPoints(game) {
         for (tmp_point = 0, var_x++; exists(game, var_x, var_y); var_x++, tmp_point++){}
         ////console.log("countH ? tmp_point ".concat(tmp_point));
         if (tmp_point == 6){
-            tmp_point =+ 6; // bonus + 6 for 6 in line
+            tmp_point += 6; // bonus + 6 for 6 in line
         }
         return tmp_point;
     }
