@@ -7,7 +7,7 @@ game clone built with node.js and jQuery.
 
 Preview : https://quirky-game.herokuapp.com/
 
-Forked from original code from [jlas] (https://github.com/jlas/quirky). This fork enables :
+Forked from original code from [jlas](https://github.com/jlas/quirky). This fork enables :
 * add support for current node.js version
 * add touch screen support, enabling play on tablet and mobile
 * add possibility to put pieces back to bag
