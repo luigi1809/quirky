@@ -1,5 +1,6 @@
 Quirky
 ======
+![build](https://travis-ci.org/luigi1809/quirky.svg?branch=master)
 
 Quirky is a [Qwirkle](http://www.google.com/search?q=qwirkle+board+game) board
 game clone built with node.js and jQuery.
