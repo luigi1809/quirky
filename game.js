@@ -168,24 +168,13 @@ function respOk (response, data, type) {
     response.end();
 }
 
-    function exists(game, x, y){
-        if (game.boardmat[y][x] !== undefined){
-            ////console.log("exists ? piece ".concat(x," ", y, " true1"));
-            return true;
-        }
-        //else {
-        //    for (var j = 0; j < game.turn_pieces.length; j++) {
-        //        piece = game.turn_pieces[j];
-        //        if ((x == piece.column) && (y == piece.row)){
-        //            ////console.log("exists ? piece ".concat(x," ", y, " true2"));
-        //            return true;
-        //        }
-        //    }
-        //}
-        ////console.log("exists ? piece ".concat(x," ", y, " false"));
-        return false;
-        //return game.boardmat[x][y] !== undefined;
+function exists(game, x, y){
+    if (game.boardmat[y][x] !== undefined){
+        ////console.log("exists ? piece ".concat(x," ", y, " true1"));
+        return true;
     }
+    return false;
+}
 
 function addStockPiece(game, gamepiece) {
     game.bag_pieces.push(gamepiece);
@@ -241,42 +230,27 @@ function addGamePiece(game, gamepiece) {
             return true;
         }
         
-        var first_color = null;
-        var second_color = null;
-        var first_shape = null;
-        var second_shape = null;
-        for (var i = 0; i < color_array.length && i < idx_gamepiece; i++){
+        var common_color = null;
+        var common_shape = null;
+        for (var i = 0; i < color_array.length; i++){
             if (i == 0){
-                first_color = color_array[i];
-                first_shape = shape_array[i];
-                //console.log("first! ".concat(i, " ", first_color, " ", first_shape));
+                common_color = color_array[i];
+                common_shape = shape_array[i];
+                console.log("first ".concat(i, " ", common_color, " ", common_shape));
                 continue;
             }
-            if (first_color != color_array[i]){
-                first_color = null;
+            if (common_color != color_array[i]){
+                common_color = null;
             }
-            if (first_shape != shape_array[i]){
-                first_shape = null;
+            if (common_shape != shape_array[i]){
+                common_shape = null;
             }
-            //console.log("first ".concat(i, " ", first_color, " ", first_shape));
+            console.log("common ".concat(i, " ", common_color, " ", common_shape));
         }
-        //console.log("first ".concat(first_color, " ", first_shape));
-        for (var i = idx_gamepiece; i < color_array.length; i++){
-            if (i == idx_gamepiece){
-                second_color = color_array[i];
-                second_shape = shape_array[i];
-                //console.log("second! ".concat(i, " ", second_color, " ", second_shape));
-                continue;
-            }
-            if (second_color != color_array[i]){
-                second_color = null;
-            }
-            if (second_shape != shape_array[i]){
-                second_shape = null;
-            }
-            //console.log("second ".concat(i, " ", second_color, " ", second_shape));
+        console.log("common ".concat(common_color, " ", common_shape));
+        if (common_color == null && common_shape == null){
+            return false;
         }
-        //console.log("second ".concat(second_color, " ", second_shape));
 
         for (var i = 0; i < color_array.length; i++){
             for (var j = 0; j < color_array.length; j++){
@@ -289,24 +263,6 @@ function addGamePiece(game, gamepiece) {
                     return false;
                 }
             }
-        }
-        
-        if (first_color == null && second_color == null && first_shape == null && second_shape == null){
-            //console.log("DEB all null");
-            return false;
-        }
-        
-        if (idx_gamepiece == 0){
-            if (second_color == null && second_shape == null){
-                //console.log("DEB all second null");
-                return false;
-            }
-            return true;
-        }
-        
-        if (first_color != second_color && first_shape != second_shape){
-            //console.log("DEB nothing in common");
-            return false;
         }
         return true;
     }
