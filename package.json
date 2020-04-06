@@ -10,7 +10,7 @@
   "engines": {
     "node": ">=0.10.6 <20.0.0"
   },
-  "homepage": "https://github.com/jlas/quirky",
+  "homepage": "https://github.com/luigi1809/quirky",
   "keywords": [
     "board game",
     "game",
@@ -19,11 +19,11 @@
   "name": "quirky",
   "repository": {
     "type": "git",
-    "url": "git://github.com/jlas/quirky.git"
+    "url": "git://github.com/luigi1809/quirky.git"
   },
   "scripts": {
     "start": "./game.js"
   },
-  "version": "0.1.2",
+  "version": "0.1.3",
   "devDependencies": {}
 }
